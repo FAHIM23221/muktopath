@@ -9,7 +9,7 @@ compatibility_date = "2024-11-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "muktopath-db"
-database_id = "00000000-0000-0000-0000-000000000000" # <-- আসল D1 ID দিয়ে বদলান (লোকাল টেস্টে এই placeholder-ই চলবে)
+database_id = "11f4193c-def7-40ad-a6ab-3a4ff202b69b"
 
 # R2 বাকেট — ফাইল রাখার জন্য
 [[r2_buckets]]
