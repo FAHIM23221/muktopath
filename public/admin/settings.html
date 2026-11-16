@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>সেটিংস — অ্যাডমিন</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-side" id="admin-side"></aside>
+  <main class="admin-main">
+    <h1 style="margin-bottom:14px">সেটিংস</h1>
+    <div class="form-card">
+      <form id="set-form">
+        <label>সাইটের নাম</label><input name="site_name">
+        <label>ট্যাগলাইন</label><input name="tagline">
+        <label>হোমপেজ হিরো শিরোনাম</label><input name="hero_title">
+        <label>হিরো উপ-শিরোনাম</label><textarea name="hero_subtitle" style="min-height:80px"></textarea>
+        <label>bKash নম্বর (সাপোর্টের জন্য)</label><input name="bkash_number" placeholder="01XXXXXXXXX">
+        <label>Nagad নম্বর</label><input name="nagad_number" placeholder="01XXXXXXXXX">
+        <label>যোগাযোগের ইমেইল</label><input name="contact_email" type="email">
+        <label>Facebook পেজের লিংক</label><input name="facebook_url">
+        <label>YouTube চ্যানেলের লিংক</label><input name="youtube_url">
+        <label>উপকৃত মানুষ (ম্যানুয়াল সংখ্যা — খরচের উপকৃতের সাথে যোগ হয়)</label><input name="beneficiaries_count" type="number" min="0">
+        <label>সাইট সম্পর্কে (যোগাযোগ পেজে দেখায়)</label><textarea name="about_text"></textarea>
+        <p style="margin-top:16px"><button class="btn btn-green" type="submit">সেটিংস সংরক্ষণ করুন</button></p>
+        <div class="form-msg" id="form-msg"></div>
+      </form>
+    </div>
+  </main>
+</div>
+<script src="/assets/js/admin.js"></script>
+<script>
+(async () => {
+  await adminShell('settings');
+  const d = await apiGet('/api/admin/settings');
+  const f = document.getElementById('set-form');
+  for (const [k, v] of Object.entries(d.settings)) { if (f.elements[k]) f.elements[k].value = v; }
+  f.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const body = Object.fromEntries(new FormData(f));
+    try {
+      await apiSend('/api/admin/settings', 'PUT', body);
+      const el = document.getElementById('form-msg');
+      el.textContent = 'সেটিংস সংরক্ষণ হয়েছে ✓'; el.className = 'form-msg ok';
+    } catch (err) {
+      const el = document.getElementById('form-msg');
+      el.textContent = err.message; el.className = 'form-msg err';
+    }
+  });
+})();
+</script>
+</body>
+</html>

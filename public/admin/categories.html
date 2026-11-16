@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ক্যাটাগরি — অ্যাডমিন</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-side" id="admin-side"></aside>
+  <main class="admin-main">
+    <h1 style="margin-bottom:14px">ক্যাটাগরি</h1>
+    <div class="form-card" style="margin-bottom:22px">
+      <h2 id="form-title">নতুন ক্যাটাগরি</h2>
+      <form id="cat-form">
+        <label>নাম *</label><input name="name" required maxlength="100">
+        <label>Slug (শুধু নতুনের সময়, ইংরেজি)</label><input name="slug" maxlength="80" placeholder="যেমন: books">
+        <label>বিবরণ</label><input name="description" maxlength="300">
+        <label>ক্রম (sort order)</label><input name="sort_order" type="number" value="0">
+        <p style="margin-top:14px"><button class="btn btn-green" type="submit">সংরক্ষণ</button>
+        <button class="btn btn-ghost" type="button" id="reset-btn" style="display:none">নতুন ফর্ম</button></p>
+        <div class="form-msg" id="form-msg"></div>
+      </form>
+    </div>
+    <div class="table-wrap"><table id="cat-table"><tr><th>নাম</th><th>Slug</th><th>বিবরণ</th><th>ক্রম</th><th>কাজ</th></tr></table></div>
+  </main>
+</div>
+<script src="/assets/js/admin.js"></script>
+<script>
+let editingId = null; let cache = [];
+function msg(t, ok) { const el = document.getElementById('form-msg'); el.textContent = t; el.className = 'form-msg ' + (ok ? 'ok' : 'err'); }
+async function load() {
+  const d = await apiGet('/api/admin/categories'); cache = d.categories;
+  document.getElementById('cat-table').innerHTML = '<tr><th>নাম</th><th>Slug</th><th>বিবরণ</th><th>ক্রম</th><th>কাজ</th></tr>' +
+    cache.map((c) => `<tr><td><strong>${esc(c.name)}</strong></td><td>${esc(c.slug)}</td><td>${esc(c.description || '')}</td><td>${c.sort_order}</td>
+      <td><button class="btn btn-small btn-ghost" data-edit="${c.id}">এডিট</button>
+      <button class="btn btn-small btn-danger" data-del="${c.id}">মুছুন</button></td></tr>`).join('');
+  document.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => {
+    const c = cache.find((x) => x.id === Number(b.dataset.edit)); editingId = c.id;
+    const f = document.getElementById('cat-form');
+    f.name.value = c.name; f.description.value = c.description || ''; f.sort_order.value = c.sort_order; f.slug.value = c.slug; f.slug.disabled = true;
+    document.getElementById('form-title').textContent = 'ক্যাটাগরি এডিট';
+    document.getElementById('reset-btn').style.display = 'inline-block';
+  }));
+  document.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => {
+    if (!confirm('ক্যাটাগরি মুছলে এর রিসোর্সগুলো ক্যাটাগরি-ছাড়া হয়ে যাবে। নিশ্চিত?')) return;
+    await apiSend('/api/admin/categories/' + b.dataset.del, 'DELETE'); load();
+  }));
+}
+document.getElementById('reset-btn').addEventListener('click', () => {
+  editingId = null; const f = document.getElementById('cat-form'); f.reset(); f.slug.disabled = false;
+  document.getElementById('form-title').textContent = 'নতুন ক্যাটাগরি';
+  document.getElementById('reset-btn').style.display = 'none';
+});
+document.getElementById('cat-form').addEventListener('submit', async (e) => {
+  e.preventDefault(); const f = e.target;
+  const body = { name: f.name.value, slug: f.slug.value, description: f.description.value, sort_order: f.sort_order.value };
+  try {
+    if (editingId) await apiSend('/api/admin/categories/' + editingId, 'PUT', body);
+    else await apiSend('/api/admin/categories', 'POST', body);
+    msg('সংরক্ষণ হয়েছে ✓', true); document.getElementById('reset-btn').click(); load();
+  } catch (err) { msg(err.message, false); }
+});
+(async () => { await adminShell('categories'); load(); })();
+</script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>যোগাযোগ — মুক্তপাঠ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body data-page="contact">
+<header class="site-header" id="site-header"></header>
+<section>
+  <div class="container">
+    <h1 class="section-title">কিছু জানার আছে? লিখে পাঠান</h1>
+    <p class="section-sub">সমস্যা, প্রশ্ন বা পরামর্শ — মেসেজটা শুধু অ্যাডমিন দেখেন। আপনার দেওয়া মাধ্যমে উত্তর পাঠানো হবে।</p>
+
+    <div class="steps" style="margin-bottom:26px">
+      <div class="step"><div class="n">১</div><h3>লিখুন</h3><p>নাম আর প্রশ্নটা লিখুন।</p></div>
+      <div class="step"><div class="n">২</div><h3>মাধ্যম বেছে নিন</h3><p>উত্তর কোথায় পেতে চান: ইমেইল, WhatsApp বা Facebook।</p></div>
+      <div class="step"><div class="n">৩</div><h3>উত্তর পাবেন</h3><p>পড়ে যত তাড়াতাড়ি সম্ভব উত্তর পাঠানো হবে।</p></div>
+    </div>
+
+    <div class="form-card">
+      <form id="msg-form">
+        <label>আপনার নাম *</label><input name="name" required maxlength="100">
+        <label>বিষয়</label>
+        <select name="topic">
+          <option value="general">সাধারণ প্রশ্ন</option>
+          <option value="download">ডাউনলোড বা ফাইল খুলতে সমস্যা</option>
+          <option value="support">সাপোর্ট বা Trx ID নিয়ে প্রশ্ন</option>
+          <option value="request">নতুন বই/গাইডের অনুরোধ</option>
+          <option value="other">অন্যান্য</option>
+        </select>
+        <label>উত্তর পাওয়ার মাধ্যম *</label>
+        <select name="channel">
+          <option value="email">ইমেইল</option>
+          <option value="whatsapp">WhatsApp</option>
+          <option value="facebook">Facebook</option>
+        </select>
+        <label>আপনার ইমেইল / WhatsApp নম্বর / Facebook আইডি *</label>
+        <input name="contact" required maxlength="150">
+        <label>মেসেজ *</label><textarea name="body" required maxlength="2000"></textarea>
+        <p style="margin-top:16px"><button class="btn" type="submit">মেসেজ পাঠান</button></p>
+        <div class="form-msg" id="msg-status"></div>
+      </form>
+    </div>
+    <p style="margin-top:20px;color:var(--muted)" id="about"></p>
+  </div>
+</section>
+<footer class="site-footer" id="site-footer"></footer>
+<script src="/assets/js/common.js"></script>
+<script>
+(async () => {
+  const site = await loadSite();
+  if (site.about_text) document.getElementById('about').textContent = site.about_text;
+  formHandler('msg-form', 'msg-status', async (fd) => (await apiPost('/api/messages', Object.fromEntries(fd))).message);
+})();
+</script>
+</body>
+</html>

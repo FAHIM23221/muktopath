@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ফান্ডের খরচ — অ্যাডমিন</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-side" id="admin-side"></aside>
+  <main class="admin-main">
+    <h1 style="margin-bottom:6px">ভালো কাজের ফান্ড — খরচ</h1>
+    <p style="color:var(--muted);margin-bottom:6px" id="fund-line">ফান্ডের হিসাব লোড হচ্ছে…</p>
+    <p style="color:var(--muted);margin-bottom:14px">প্রতিটি খরচ প্রমাণসহ পাবলিক পেজে দেখা যায়। প্রমাণের লিংকে ছবি/PDF-এর URL দিন।</p>
+    <div class="form-card" style="margin-bottom:22px">
+      <h2 id="form-title">নতুন খরচ যোগ করুন</h2>
+      <form id="exp-form">
+        <label>শিরোনাম *</label><input name="title" required maxlength="200">
+        <label>খাত (শিক্ষা, চিকিৎসা…)</label><input name="category" maxlength="80">
+        <label>পরিমাণ (টাকা) *</label><input name="amount" type="number" min="1" required>
+        <label>তারিখ *</label><input name="spent_at" type="date" required>
+        <label>প্রমাণের লিংক</label><input name="proof_url" maxlength="1000" placeholder="https://…">
+        <label>উপকৃত মানুষের সংখ্যা</label><input name="beneficiaries" type="number" min="0" value="0">
+        <label>নোট</label><textarea name="note" maxlength="1000" style="min-height:70px"></textarea>
+        <p style="margin-top:14px"><button class="btn btn-green" type="submit">সংরক্ষণ</button>
+        <button class="btn btn-ghost" type="button" id="reset-btn" style="display:none">নতুন ফর্ম</button></p>
+        <div class="form-msg" id="form-msg"></div>
+      </form>
+    </div>
+    <div class="table-wrap"><table id="exp-table"></table></div>
+  </main>
+</div>
+<script src="/assets/js/admin.js"></script>
+<script>
+let editingId = null; let cache = [];
+function msg(t, ok) { const el = document.getElementById('form-msg'); el.textContent = t; el.className = 'form-msg ' + (ok ? 'ok' : 'err'); }
+async function load() {
+  const d = await apiGet('/api/admin/expenses'); cache = d.expenses;
+  const dash = await apiGet('/api/admin/dashboard');
+  document.getElementById('fund-line').textContent =
+    `ফান্ডে মোট জমা ${taka(dash.fund.total_in)} (সাপোর্টের ১০%: ${taka(dash.fund.from_support_10pct)} + সরাসরি অনুদান ${taka(dash.fund.direct_donations)}) · মোট খরচ ${taka(dash.fund.total_out)} · ব্যালেন্স ${taka(dash.fund.balance)}`;
+  document.getElementById('exp-table').innerHTML =
+    '<tr><th>তারিখ</th><th>শিরোনাম</th><th>খাত</th><th>পরিমাণ</th><th>উপকৃত</th><th>প্রমাণ</th><th>কাজ</th></tr>' +
+    (cache.map((e) => `<tr><td>${esc(e.spent_at)}</td><td><strong>${esc(e.title)}</strong></td><td>${esc(e.category || '')}</td>
+      <td>${taka(e.amount)}</td><td>${bnNum(e.beneficiaries)}</td>
+      <td>${e.proof_url ? `<a href="${esc(e.proof_url)}" target="_blank" rel="noopener">দেখুন</a>` : '—'}</td>
+      <td><button class="btn btn-small btn-ghost" data-edit="${e.id}">এডিট</button>
+      <button class="btn btn-small btn-danger" data-del="${e.id}">মুছুন</button></td></tr>`).join('') || '<tr><td colspan="7">কোনো খরচ নেই</td></tr>');
+  document.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => {
+    const e = cache.find((x) => x.id === Number(b.dataset.edit)); editingId = e.id;
+    const f = document.getElementById('exp-form');
+    f.title.value = e.title; f.category.value = e.category || ''; f.amount.value = e.amount;
+    f.spent_at.value = e.spent_at; f.proof_url.value = e.proof_url || ''; f.beneficiaries.value = e.beneficiaries;
+    f.note.value = e.note || '';
+    document.getElementById('form-title').textContent = 'খরচ এডিট করুন';
+    document.getElementById('reset-btn').style.display = 'inline-block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }));
+  document.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => {
+    if (!confirm('খরচটি মুছতে চান?')) return;
+    await apiSend('/api/admin/expenses?id=' + b.dataset.del, 'DELETE'); load();
+  }));
+}
+document.getElementById('reset-btn').addEventListener('click', () => {
+  editingId = null; document.getElementById('exp-form').reset();
+  document.getElementById('form-title').textContent = 'নতুন খরচ যোগ করুন';
+  document.getElementById('reset-btn').style.display = 'none';
+});
+document.getElementById('exp-form').addEventListener('submit', async (e) => {
+  e.preventDefault(); const f = e.target;
+  const body = { title: f.title.value, category: f.category.value, amount: f.amount.value, spent_at: f.spent_at.value,
+    proof_url: f.proof_url.value, beneficiaries: f.beneficiaries.value, note: f.note.value };
+  try {
+    if (editingId) await apiSend('/api/admin/expenses', 'PUT', { ...body, id: editingId });
+    else await apiSend('/api/admin/expenses', 'POST', body);
+    msg('সংরক্ষণ হয়েছে ✓', true); document.getElementById('reset-btn').click(); load();
+  } catch (err) { msg(err.message, false); }
+});
+(async () => { await adminShell('expenses'); load(); })();
+</script>
+</body>
+</html>

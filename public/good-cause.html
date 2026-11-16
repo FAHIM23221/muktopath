@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ভালো কাজের ফান্ড — মুক্তপাঠ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body data-page="good-cause">
+<header class="site-header" id="site-header"></header>
+<section>
+  <div class="container">
+    <h1 class="section-title">ভালো কাজের ফান্ড</h1>
+    <p class="section-sub">প্রতিটি টাকার হিসাব, সবার সামনে। এটি আলাদা ফান্ড — কারও ব্যক্তিগত আয় নয়। সাপোর্টের ১০% আর সরাসরি অনুদান এখানে আসে, তবে শুধু যাচাইয়ের পর। প্রতিটি খরচ প্রমাণের লিংকসহ প্রকাশ হয়।</p>
+
+    <div class="stats" style="margin:0 0 26px">
+      <div class="stat-card"><div class="num" id="f-in">–</div><div class="lbl">মোট জমা</div></div>
+      <div class="stat-card"><div class="num" id="f-out">–</div><div class="lbl">মোট খরচ</div></div>
+      <div class="stat-card"><div class="num" id="f-bal">–</div><div class="lbl">এখন ফান্ডে আছে</div></div>
+      <div class="stat-card"><div class="num" id="f-people">–</div><div class="lbl">উপকৃত মানুষ</div></div>
+    </div>
+    <p style="color:var(--muted)" id="f-breakdown"></p>
+
+    <div id="pay-numbers" style="margin-top:20px"></div>
+    <div class="form-card" style="margin-top:18px">
+      <h2>ফান্ডে সরাসরি অনুদান দিন</h2>
+      <p style="color:var(--muted)">উপরের নম্বরে Send Money করে Transaction ID জমা দিন — যাচাইয়ের পর পুরো টাকাটাই ফান্ডে যোগ হবে।</p>
+      <form id="donate-form">
+        <label>আপনার নাম *</label><input name="name" required maxlength="100">
+        <label>আপনার মোবাইল নম্বর</label><input name="phone" maxlength="30">
+        <label>মাধ্যম *</label>
+        <select name="method"><option value="bkash">bKash</option><option value="nagad">Nagad</option></select>
+        <label>পরিমাণ (টাকা) *</label><input name="amount" type="number" min="1" required>
+        <label>Transaction ID *</label><input name="trx_id" required maxlength="20">
+        <label>মন্তব্য (ঐচ্ছিক)</label><textarea name="message" maxlength="300" style="min-height:70px"></textarea>
+        <p style="margin-top:16px"><button class="btn" type="submit">অনুদান জমা দিন</button></p>
+        <div class="form-msg" id="donate-msg"></div>
+      </form>
+    </div>
+
+    <h2 class="section-title" style="margin-top:40px">খরচের হিসাব</h2>
+    <p class="section-sub">প্রতিটি খরচ প্রমাণসহ।</p>
+    <div id="expenses"><p class="empty">লোড হচ্ছে…</p></div>
+
+    <h2 class="section-title" style="margin-top:40px">যাচাইয়ের অপেক্ষায়</h2>
+    <p class="section-sub">সরাসরি অনুদান, যা এখনো যাচাই হয়নি — যাচাইয়ের আগে এগুলো ফান্ডে যোগ হয় না।</p>
+    <div id="pending"><p class="empty">লোড হচ্ছে…</p></div>
+
+    <h2 class="section-title" style="margin-top:40px">যারা দান করলেন</h2>
+    <p class="section-sub">যাচাই হওয়া অনুদান ও দাতাদের কথা।</p>
+    <div id="donors"></div>
+
+    <h2 class="section-title" style="margin-top:40px">মন্তব্য</h2>
+    <p class="section-sub">হিসাব নিয়ে প্রশ্ন, প্রশংসা বা সমালোচনা — সব লিখুন।</p>
+    <div class="form-card">
+      <form id="comment-form">
+        <label>নাম *</label><input name="name" required maxlength="80">
+        <label>মন্তব্য *</label><textarea name="body" required maxlength="500"></textarea>
+        <p style="margin-top:14px"><button class="btn btn-green" type="submit">মন্তব্য জমা দিন</button></p>
+        <div class="form-msg" id="comment-msg"></div>
+      </form>
+    </div>
+    <div id="comments" style="margin-top:16px"></div>
+  </div>
+</section>
+<footer class="site-footer" id="site-footer"></footer>
+<script src="/assets/js/common.js"></script>
+<script>
+(async () => {
+  const site = await loadSite();
+  const rows = [];
+  if (site.bkash_number) rows.push(['bKash', site.bkash_number]);
+  if (site.nagad_number) rows.push(['Nagad', site.nagad_number]);
+  document.getElementById('pay-numbers').innerHTML = rows.length ? rows.map(([m, n]) => `
+    <div class="pay-box"><strong>${m}:</strong><span class="num">${esc(n)}</span>
+    <button class="copy-btn" data-num="${esc(n)}">কপি করুন</button></div>`).join('')
+    : '<div class="notice">পেমেন্ট নম্বর শীঘ্রই যোগ করা হবে।</div>';
+  document.querySelectorAll('.copy-btn').forEach((b) => b.addEventListener('click', () => copyText(b.dataset.num, b)));
+
+  try {
+    const d = await api('/api/fund');
+    const s = d.summary;
+    document.getElementById('f-in').textContent = taka(s.total_in);
+    document.getElementById('f-out').textContent = taka(s.total_out);
+    document.getElementById('f-bal').textContent = taka(s.balance);
+    document.getElementById('f-people').textContent = bnNum(s.beneficiaries);
+    document.getElementById('f-breakdown').textContent =
+      `এর মধ্যে সরাসরি অনুদান ${taka(s.direct_donations)} এবং সাপোর্ট থেকে ১০% হিসেবে ${taka(s.from_support_10pct)} (মোট যাচাই হওয়া সাপোর্ট ${taka(s.support_total)})।`;
+
+    document.getElementById('expenses').innerHTML = d.expenses.length
+      ? `<div class="table-wrap"><table><tr><th>তারিখ</th><th>খাত</th><th>বিবরণ</th><th>পরিমাণ</th><th>প্রমাণ</th></tr>
+         ${d.expenses.map((e) => `<tr><td>${esc(e.spent_at)}</td><td>${esc(e.category || '')}</td>
+           <td><strong>${esc(e.title)}</strong>${e.note ? `<br><span style="color:var(--muted)">${esc(e.note)}</span>` : ''}${e.beneficiaries ? `<br>উপকৃত: ${bnNum(e.beneficiaries)} জন` : ''}</td>
+           <td>${taka(e.amount)}</td>
+           <td>${e.proof_url ? `<a href="${esc(e.proof_url)}" target="_blank" rel="noopener">প্রমাণ দেখুন</a>` : '—'}</td></tr>`).join('')}</table></div>`
+      : '<p class="empty">এখনো কোনো খরচ হয়নি।</p>';
+
+    document.getElementById('pending').innerHTML = d.pending_donations.length
+      ? `<div class="table-wrap"><table><tr><th>নাম</th><th>পরিমাণ</th><th>মাধ্যম</th><th>জমার তারিখ</th></tr>
+         ${d.pending_donations.map((p) => `<tr><td>${esc(p.name)}</td><td>${taka(p.amount)}</td><td>${p.method === 'nagad' ? 'Nagad' : 'bKash'}</td><td>${fmtDate(p.created_at)}</td></tr>`).join('')}</table></div>`
+      : '<p class="empty">অপেক্ষমাণ অনুদান নেই।</p>';
+
+    document.getElementById('donors').innerHTML = d.verified_donations.length
+      ? `<div class="table-wrap"><table><tr><th>নাম</th><th>পরিমাণ</th><th>মন্তব্য</th></tr>
+         ${d.verified_donations.map((p) => `<tr><td>${esc(p.name)}</td><td>${taka(p.amount)}</td><td>${esc(p.message || '')}</td></tr>`).join('')}</table></div>`
+      : '<p class="empty">এখনো যাচাই হওয়া অনুদান নেই।</p>';
+  } catch { document.getElementById('expenses').innerHTML = '<p class="empty">হিসাব লোড করা যায়নি।</p>'; }
+
+  try {
+    const d = await api('/api/comments?page=good-cause');
+    document.getElementById('comments').innerHTML = d.comments.map((c) => `
+      <div class="comment"><span class="who">${esc(c.name)}</span> <span class="when">${fmtDate(c.created_at)}</span><p>${esc(c.body)}</p></div>`).join('')
+      || '<p class="empty">এখনো কোনো মন্তব্য নেই।</p>';
+  } catch { /* ignore */ }
+
+  formHandler('donate-form', 'donate-msg', async (fd) => (await apiPost('/api/donations', Object.fromEntries(fd))).message);
+  formHandler('comment-form', 'comment-msg', async (fd) => {
+    const obj = Object.fromEntries(fd); obj.page = 'good-cause';
+    return (await apiPost('/api/comments', obj)).message;
+  });
+})();
+</script>
+</body>
+</html>

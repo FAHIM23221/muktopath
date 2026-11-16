@@ -1,0 +1,20 @@
+# মুক্তপাঠ — Cloudflare Pages কনফিগ (টেমপ্লেট)
+# README.md-র ধাপ অনুসরণ করে নিচের placeholder মানগুলো নিজের দিয়ে বদলান।
+
+name = "muktopath"
+pages_build_output_dir = "public"
+compatibility_date = "2024-11-01"
+
+# D1 ডাটাবেস — Cloudflare ড্যাশবোর্ডে D1 তৈরি করে database_id বসান
+[[d1_databases]]
+binding = "DB"
+database_name = "muktopath-db"
+database_id = "00000000-0000-0000-0000-000000000000" # <-- আসল D1 ID দিয়ে বদলান (লোকাল টেস্টে এই placeholder-ই চলবে)
+
+# R2 বাকেট — ফাইল রাখার জন্য
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "muktopath-files"
+
+# সিক্রেট (wrangler pages secret put দিয়ে বা ড্যাশবোর্ড থেকে দিন — ফাইলে লিখবেন না):
+#   SETUP_TOKEN  — প্রথম অ্যাডমিন তৈরির এককালীন গোপন টোকেন

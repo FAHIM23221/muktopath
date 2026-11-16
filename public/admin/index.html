@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ড্যাশবোর্ড — মুক্তপাঠ অ্যাডমিন</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-side" id="admin-side"></aside>
+  <main class="admin-main">
+    <h1 style="margin-bottom:18px">ড্যাশবোর্ড</h1>
+    <div class="admin-cards">
+      <div class="stat-card"><div class="num" id="d-res">–</div><div class="lbl">মোট রিসোর্স</div></div>
+      <div class="stat-card"><div class="num" id="d-dl">–</div><div class="lbl">মোট ডাউনলোড</div></div>
+      <div class="stat-card"><div class="num" id="d-today">–</div><div class="lbl">আজকের ডাউনলোড</div></div>
+      <div class="stat-card"><div class="num" id="d-fund">–</div><div class="lbl">ফান্ড ব্যালেন্স</div></div>
+    </div>
+    <div id="pending-box"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px" id="recent-grid">
+      <div><h3 style="margin-bottom:10px">সাম্প্রতিক ডাউনলোড</h3><div class="table-wrap"><table id="recent-dl"><tr><th>রিসোর্স</th><th>সময়</th></tr></table></div></div>
+      <div><h3 style="margin-bottom:10px">সাম্প্রতিক পেমেন্ট</h3><div class="table-wrap"><table id="recent-pay"><tr><th>নাম</th><th>পরিমাণ</th><th>ধরন</th><th>অবস্থা</th></tr></table></div></div>
+    </div>
+  </main>
+</div>
+<script src="/assets/js/admin.js"></script>
+<script>
+(async () => {
+  await adminShell('dashboard');
+  const d = await apiGet('/api/admin/dashboard');
+  document.getElementById('d-res').textContent = bnNum(d.totals.resources) + ' (প্রকাশিত ' + bnNum(d.totals.resources_published) + ')';
+  document.getElementById('d-dl').textContent = bnNum(d.totals.downloads);
+  document.getElementById('d-today').textContent = bnNum(d.totals.downloads_today);
+  document.getElementById('d-fund').textContent = taka(d.fund.balance);
+  const p = d.pending;
+  const items = [];
+  if (p.support) items.push(`<a href="/admin/payments.html">সাপোর্ট যাচাই বাকি: ${bnNum(p.support)}টি</a>`);
+  if (p.donations) items.push(`<a href="/admin/payments.html">অনুদান যাচাই বাকি: ${bnNum(p.donations)}টি</a>`);
+  if (p.comments) items.push(`<a href="/admin/comments.html">মন্তব্য মডারেশন বাকি: ${bnNum(p.comments)}টি</a>`);
+  if (p.messages_unread) items.push(`<a href="/admin/messages.html">অপঠিত মেসেজ: ${bnNum(p.messages_unread)}টি</a>`);
+  document.getElementById('pending-box').innerHTML = items.length
+    ? `<div class="notice"><strong>মনোযোগ দরকার:</strong> ${items.join(' · ')}</div>` : '';
+  document.getElementById('recent-dl').innerHTML += d.recent_downloads.map((x) =>
+    `<tr><td>${esc(x.title)}</td><td>${fmtDate(x.created_at)}</td></tr>`).join('') || '<tr><td colspan="2">এখনো নেই</td></tr>';
+  document.getElementById('recent-pay').innerHTML += d.recent_payments.map((x) =>
+    `<tr><td>${esc(x.name)}</td><td>${taka(x.amount)}</td><td>${x.kind === 'donation' ? 'অনুদান' : 'সাপোর্ট'}</td><td><span class="status ${x.status}">${statusBn(x.status)}</span></td></tr>`).join('')
+    || '<tr><td colspan="4">এখনো নেই</td></tr>';
+  if (window.innerWidth < 820) document.getElementById('recent-grid').style.gridTemplateColumns = '1fr';
+})();
+</script>
+</body>
+</html>

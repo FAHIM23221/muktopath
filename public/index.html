@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>মুক্তপাঠ — সবার জন্য ফ্রি রিসোর্স</title>
+<meta name="description" content="বই, গাইড, টেমপ্লেট ও টুলস — অ্যাকাউন্ট ছাড়াই ফ্রি ডাউনলোড। সাপোর্টের ১০% যায় ভালো কাজের ফান্ডে।">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body data-page="index">
+<header class="site-header" id="site-header"></header>
+
+<div class="hero">
+  <div class="container">
+    <h1 id="hero-title">দরকারি রিসোর্স, এক ঠিকানায় — সম্পূর্ণ ফ্রি</h1>
+    <p id="hero-sub"></p>
+    <div class="cta-row">
+      <a class="btn" href="/resources.html">রিসোর্স লাইব্রেরি দেখুন</a>
+      <a class="btn btn-ghost" style="border-color:#fff;color:#fff" href="/support.html">সাপোর্ট করুন</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="stats">
+    <div class="stat-card"><div class="num" id="st-resources">–</div><div class="lbl">প্রকাশিত রিসোর্স</div></div>
+    <div class="stat-card"><div class="num" id="st-downloads">–</div><div class="lbl">মোট ডাউনলোড</div></div>
+    <div class="stat-card"><div class="num" id="st-people">–</div><div class="lbl">উপকৃত মানুষ</div></div>
+    <div class="stat-card"><div class="num" id="st-fund">–</div><div class="lbl">ফান্ডে আছে</div></div>
+  </div>
+</div>
+
+<section>
+  <div class="container">
+    <h2 class="section-title">বাছাই করা রিসোর্স</h2>
+    <p class="section-sub">প্রতিটি ফাইল ফ্রি। সাপোর্ট করা সম্পূর্ণ ঐচ্ছিক।</p>
+    <div class="grid" id="featured-grid"><p class="empty">লোড হচ্ছে…</p></div>
+    <p style="text-align:center;margin-top:24px"><a class="btn btn-green" href="/resources.html">সব রিসোর্স দেখুন</a></p>
+  </div>
+</section>
+
+<section style="background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+  <div class="container">
+    <h2 class="section-title">ক্যাটাগরি ধরে খুঁজুন</h2>
+    <p class="section-sub">যা দরকার, সেখান থেকেই শুরু করুন।</p>
+    <div class="grid" id="cat-grid"></div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="fund-band">
+      <h2 class="section-title">ভালো কাজের ফান্ড</h2>
+      <p>যাচাই হওয়া প্রতিটি সাপোর্টের ১০% এই ফান্ডে জমা হয়। প্রতিটি খরচ প্রমাণসহ প্রকাশ করা হয় — কে দিল, কোথায় গেল, সবাই দেখতে পারে।</p>
+      <p style="margin-top:12px"><a class="btn btn-green" href="/good-cause.html">ফান্ডের পুরো হিসাব দেখুন</a></p>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="container">
+    <h2 class="section-title">কীভাবে কাজ করে</h2>
+    <p class="section-sub"></p>
+    <div class="steps">
+      <div class="step"><div class="n">০১</div><h3>ফ্রি ডাউনলোড</h3><p>যেকোনো রিসোর্স নিন — অ্যাকাউন্ট বা পেমেন্ট লাগে না।</p></div>
+      <div class="step"><div class="n">০২</div><h3>ইচ্ছে হলে সাপোর্ট</h3><p>bKash বা Nagad-এ সামান্য পাঠিয়ে Transaction ID জমা দিন।</p></div>
+      <div class="step"><div class="n">০৩</div><h3>১০% ভালো কাজে</h3><p>অ্যাডমিন যাচাই করলেই ১০% ফান্ডে যায়। ভুয়া হলে কিছুই যায় না।</p></div>
+    </div>
+    <div style="text-align:center;margin-top:34px">
+      <h3>এই লাইব্রেরি চালু রাখতে পাশে থাকুন</h3>
+      <p style="color:var(--muted);margin:8px 0 16px">আপনার সাপোর্টে সাইট চলে, নতুন রিসোর্স আসে, আর ১০% যায় কারও প্রয়োজনে।</p>
+      <a class="btn" href="/support.html">প্রজেক্ট সাপোর্ট করুন</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+<script src="/assets/js/common.js"></script>
+<script>
+(async () => {
+  const site = await loadSite();
+  document.getElementById('hero-title').textContent = site.hero_title || document.getElementById('hero-title').textContent;
+  document.getElementById('hero-sub').textContent = site.hero_subtitle || '';
+  try {
+    const s = await api('/api/stats');
+    document.getElementById('st-resources').textContent = bnNum(s.resources);
+    document.getElementById('st-downloads').textContent = bnNum(s.downloads);
+    document.getElementById('st-people').textContent = bnNum(s.beneficiaries);
+    document.getElementById('st-fund').textContent = taka(s.fund_balance);
+  } catch { /* সংখ্যা না এলেও পেজ চলবে */ }
+  const grid = document.getElementById('featured-grid');
+  try {
+    let d = await api('/api/resources?featured=1&limit=6');
+    if (!d.resources.length) d = await api('/api/resources?limit=6');
+    grid.innerHTML = d.resources.length ? d.resources.map(resourceCard).join('') : '<p class="empty">শীঘ্রই রিসোর্স আসছে।</p>';
+  } catch { grid.innerHTML = '<p class="empty">রিসোর্স লোড করা যায়নি।</p>'; }
+  try {
+    const c = await api('/api/categories');
+    document.getElementById('cat-grid').innerHTML = c.categories.map((cat) => `
+      <article class="card"><h3><a href="/resources.html?category=${encodeURIComponent(cat.slug)}">${esc(cat.name)}</a></h3>
+      <p class="desc">${esc(cat.description || '')}</p>
+      <div class="meta-row"><span>${bnNum(cat.resource_count)}টি রিসোর্স</span></div></article>`).join('');
+  } catch { /* ignore */ }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+// /api/support — GET: যাচাই হওয়া সাপোর্টার তালিকা | POST: নতুন সাপোর্ট জমা
+import { json, error, readJson, clean, toInt, isValidTrx } from '../_lib/utils.js';
+
+export async function onRequestGet({ env }) {
+  const { results } = await env.DB.prepare(
+    `SELECT name, amount, method, message, verified_at FROM support_payments
+     WHERE status='verified' ORDER BY verified_at DESC LIMIT 50`
+  ).all();
+  return json({ ok: true, supporters: results || [] });
+}
+
+export async function onRequestPost({ env, request }) {
+  const body = await readJson(request);
+  if (!body) return error('সঠিক তথ্য পাঠানো হয়নি');
+  const name = clean(body.name, 100);
+  const phone = clean(body.phone, 30);
+  const method = body.method === 'nagad' ? 'nagad' : 'bkash';
+  const amount = toInt(body.amount, 0);
+  const trxId = clean(body.trx_id, 20).toUpperCase();
+  const message = clean(body.message, 300);
+
+  if (!name) return error('আপনার নাম লিখুন');
+  if (amount <= 0) return error('সঠিক পরিমাণ লিখুন');
+  if (!isValidTrx(trxId)) return error('সঠিক Transaction ID লিখুন (৬–২০ অক্ষর)');
+
+  try {
+    await env.DB.prepare(
+      'INSERT INTO support_payments (name, phone, method, amount, trx_id, message) VALUES (?1,?2,?3,?4,?5,?6)'
+    ).bind(name, phone, method, amount, trxId, message).run();
+  } catch (e) {
+    if (String(e.message || e).includes('UNIQUE')) {
+      return error('এই Transaction ID আগেই জমা দেওয়া হয়েছে — ডুপ্লিকেট জমা নেওয়া হয় না', 409);
+    }
+    throw e;
+  }
+  return json({ ok: true, message: 'জমা হয়েছে! যাচাই শেষে তালিকায় আপনার নাম দেখা যাবে।' });
+}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>রিসোর্স — মুক্তপাঠ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body data-page="resources">
+<header class="site-header" id="site-header"></header>
+<section>
+  <div class="container" id="wrap"><p class="empty">লোড হচ্ছে…</p></div>
+</section>
+<footer class="site-footer" id="site-footer"></footer>
+<script src="/assets/js/common.js"></script>
+<script>
+(async () => {
+  await loadSite();
+  const slug = new URLSearchParams(location.search).get('slug') || '';
+  const wrap = document.getElementById('wrap');
+  try {
+    const d = await api('/api/resource?slug=' + encodeURIComponent(slug));
+    const r = d.resource;
+    document.title = r.title + ' — মুক্তপাঠ';
+    const shortLink = location.origin + '/s/' + r.short_code;
+    wrap.innerHTML = `
+      <p><a href="/resources.html">← সব রিসোর্স</a></p>
+      ${r.cover_url ? `<img src="${esc(r.cover_url)}" alt="" style="border-radius:14px;width:100%;max-height:320px;object-fit:cover;margin:16px 0">` : ''}
+      <h1 class="section-title" style="margin-top:10px">${esc(r.title)}</h1>
+      <div class="meta-row" style="margin-bottom:16px">
+        <span class="badge">${esc(r.category_name || 'সাধারণ')}</span>
+        ${r.file_type ? `<span>ধরন: ${esc(r.file_type).toUpperCase()}</span>` : ''}
+        ${r.file_size ? `<span>সাইজ: ${esc(r.file_size)}</span>` : ''}
+        <span>⬇ ${bnNum(r.download_count)} বার ডাউনলোড</span>
+        <span>যোগ হয়েছে: ${fmtDate(r.created_at)}</span>
+      </div>
+      <div style="white-space:pre-wrap;max-width:760px">${esc(r.description || '')}</div>
+      ${r.tags ? `<p style="margin-top:14px">${esc(r.tags).split(',').map((t) => `<span class="badge" style="margin-right:6px">#${esc(t.trim())}</span>`).join('')}</p>` : ''}
+      <div style="margin:26px 0;display:flex;gap:12px;flex-wrap:wrap">
+        ${r.has_file ? `<a class="btn" href="/api/download?id=${r.id}">⬇ ফ্রি ডাউনলোড করুন</a>` : '<span class="badge badge-amber">ফাইল শীঘ্রই আসছে</span>'}
+        <button class="btn btn-ghost" id="share-btn">শর্ট লিংক কপি করুন</button>
+      </div>
+      <p style="color:var(--muted);font-size:.9rem">শর্ট লিংক: ${esc(shortLink)}</p>
+      ${d.related.length ? `<h2 class="section-title" style="margin-top:36px">আরও দেখুন</h2>
+        <div class="grid">${d.related.map((x) => `
+          <article class="card"><h3><a href="/resource.html?slug=${encodeURIComponent(x.slug)}">${esc(x.title)}</a></h3>
+          <div class="meta-row"><span>⬇ ${bnNum(x.download_count)}</span></div></article>`).join('')}</div>` : ''}
+      <div class="fund-band" style="margin-top:36px">
+        <h3>রিসোর্সটি কাজে লাগলো?</h3>
+        <p>সাপোর্ট সম্পূর্ণ ঐচ্ছিক — তবে আপনার সামান্য সাপোর্টের ১০% যাবে ভালো কাজের ফান্ডে।</p>
+        <p style="margin-top:10px"><a class="btn btn-green btn-small" href="/support.html">সাপোর্ট করুন</a></p>
+      </div>`;
+    document.getElementById('share-btn').addEventListener('click', (e) => copyText(shortLink, e.target));
+  } catch (err) {
+    wrap.innerHTML = `<p class="empty">${esc(err.message)}</p><p style="text-align:center"><a href="/resources.html">সব রিসোর্সে ফিরুন</a></p>`;
+  }
+})();
+</script>
+</body>
+</html>

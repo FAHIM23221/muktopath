@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>রিসোর্স — অ্যাডমিন</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-side" id="admin-side"></aside>
+  <main class="admin-main">
+    <h1 style="margin-bottom:14px">রিসোর্স ম্যানেজার</h1>
+
+    <div class="form-card" style="margin-bottom:22px">
+      <h2 id="form-title">নতুন রিসোর্স যোগ করুন</h2>
+      <form id="res-form">
+        <input type="hidden" name="id">
+        <label>শিরোনাম *</label><input name="title" required maxlength="200">
+        <label>বিবরণ</label><textarea name="description" maxlength="5000"></textarea>
+        <label>ক্যাটাগরি</label><select name="category_id" id="cat-select"><option value="">— বেছে নিন —</option></select>
+        <label>ফাইলের ধরন (pdf, zip, link…)</label><input name="file_type" maxlength="30">
+        <label>বাইরের ফাইল/পেজের লিংক (R2 আপলোড না করলে)</label><input name="external_url" maxlength="1000" placeholder="https://…">
+        <label>কভার ছবির লিংক</label><input name="cover_url" maxlength="1000">
+        <label>ফাইল সাইজ (যেমন 2.4 MB)</label><input name="file_size" maxlength="30">
+        <label>ট্যাগ (কমা দিয়ে)</label><input name="tags" maxlength="300">
+        <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="is_featured" style="width:auto"> বাছাই করা (ফিচার্ড)</label>
+        <label>অবস্থা</label>
+        <select name="status"><option value="draft">ড্রাফট</option><option value="published">প্রকাশিত</option></select>
+        <p style="margin-top:14px;display:flex;gap:10px">
+          <button class="btn btn-green" type="submit">সংরক্ষণ করুন</button>
+          <button class="btn btn-ghost" type="button" id="reset-btn" style="display:none">নতুন ফর্ম</button>
+        </p>
+        <div class="form-msg" id="form-msg"></div>
+      </form>
+      <div id="upload-box" style="display:none;margin-top:18px;border-top:1px solid var(--line);padding-top:14px">
+        <h3>ফাইল আপলোড (R2)</h3>
+        <p style="color:var(--muted)" id="file-key-info"></p>
+        <input type="file" id="file-input">
+        <p style="margin-top:10px"><button class="btn btn-small" id="upload-btn" type="button">আপলোড করুন</button></p>
+        <div class="form-msg" id="upload-msg"></div>
+      </div>
+    </div>
+
+    <div class="table-wrap"><table id="res-table">
+      <tr><th>শিরোনাম</th><th>ক্যাটাগরি</th><th>অবস্থা</th><th>ডাউনলোড</th><th>শর্ট লিংক</th><th>কাজ</th></tr>
+    </table></div>
+  </main>
+</div>
+<script src="/assets/js/admin.js"></script>
+<script>
+let editingId = null;
+function msg(id, text, ok) { const el = document.getElementById(id); el.textContent = text; el.className = 'form-msg ' + (ok ? 'ok' : 'err'); }
+
+async function loadCats() {
+  const d = await apiGet('/api/admin/categories');
+  document.getElementById('cat-select').innerHTML = '<option value="">— বেছে নিন —</option>' +
+    d.categories.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+}
+async function loadList() {
+  const d = await apiGet('/api/admin/resources');
+  document.getElementById('res-table').innerHTML =
+    '<tr><th>শিরোনাম</th><th>ক্যাটাগরি</th><th>অবস্থা</th><th>ডাউনলোড</th><th>শর্ট লিংক</th><th>কাজ</th></tr>' +
+    (d.resources.map((r) => `<tr>
+      <td><strong>${esc(r.title)}</strong>${r.is_featured ? ' ⭐' : ''}<br><span style="color:var(--muted)">${esc(r.slug)}</span></td>
+      <td>${esc(r.category_name || '—')}</td>
+      <td>${r.status === 'published' ? 'প্রকাশিত' : 'ড্রাফট'}</td>
+      <td>${bnNum(r.download_count)}</td>
+      <td>/s/${esc(r.short_code)}</td>
+      <td><button class="btn btn-small btn-ghost" data-edit="${r.id}">এডিট</button>
+          <button class="btn btn-small btn-danger" data-del="${r.id}">মুছুন</button></td></tr>`).join('')
+      || '<tr><td colspan="6">এখনো কোনো রিসোর্স নেই</td></tr>');
+  document.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => editRes(Number(b.dataset.edit))));
+  document.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', () => delRes(Number(b.dataset.del))));
+}
+async function editRes(id) {
+  const d = await apiGet('/api/admin/resources/' + id);
+  const r = d.resource; editingId = id;
+  const f = document.getElementById('res-form');
+  f.title.value = r.title; f.description.value = r.description || ''; f.category_id.value = r.category_id || '';
+  f.file_type.value = r.file_type || ''; f.external_url.value = r.external_url || ''; f.cover_url.value = r.cover_url || '';
+  f.file_size.value = r.file_size || ''; f.tags.value = r.tags || ''; f.is_featured.checked = !!r.is_featured;
+  f.status.value = r.status;
+  document.getElementById('form-title').textContent = 'রিসোর্স এডিট করুন';
+  document.getElementById('reset-btn').style.display = 'inline-block';
+  document.getElementById('upload-box').style.display = 'block';
+  document.getElementById('file-key-info').textContent = r.file_key ? ('বর্তমান ফাইল: ' + r.file_key) : 'এখনো কোনো ফাইল আপলোড হয়নি।';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+async function delRes(id) {
+  if (!confirm('নিশ্চিত মুছতে চান? R2 ফাইলও মুছে যাবে।')) return;
+  await apiSend('/api/admin/resources/' + id, 'DELETE');
+  if (editingId === id) resetForm();
+  loadList();
+}
+function resetForm() {
+  editingId = null;
+  document.getElementById('res-form').reset();
+  document.getElementById('form-title').textContent = 'নতুন রিসোর্স যোগ করুন';
+  document.getElementById('reset-btn').style.display = 'none';
+  document.getElementById('upload-box').style.display = 'none';
+}
+document.getElementById('reset-btn').addEventListener('click', resetForm);
+document.getElementById('res-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const body = {
+    title: f.title.value, description: f.description.value, category_id: f.category_id.value || null,
+    file_type: f.file_type.value, external_url: f.external_url.value, cover_url: f.cover_url.value,
+    file_size: f.file_size.value, tags: f.tags.value, is_featured: f.is_featured.checked, status: f.status.value,
+  };
+  try {
+    if (editingId) { await apiSend('/api/admin/resources/' + editingId, 'PUT', body); msg('form-msg', 'আপডেট হয়েছে ✓', true); }
+    else {
+      const d = await apiSend('/api/admin/resources', 'POST', body);
+      msg('form-msg', 'তৈরি হয়েছে ✓ এখন চাইলে নিচে ফাইল আপলোড করুন।', true);
+      editRes(d.id);
+    }
+    loadList();
+  } catch (err) { msg('form-msg', err.message, false); }
+});
+document.getElementById('upload-btn').addEventListener('click', async () => {
+  const input = document.getElementById('file-input');
+  if (!editingId || !input.files.length) { msg('upload-msg', 'আগে ফাইল বেছে নিন', false); return; }
+  const fd = new FormData(); fd.append('file', input.files[0]);
+  const btn = document.getElementById('upload-btn'); btn.disabled = true;
+  try {
+    const res = await fetch('/api/admin/resources/' + editingId + '/upload', { method: 'POST', body: fd });
+    const d = await res.json();
+    if (!res.ok || !d.ok) throw new Error(d.error || 'আপলোড ব্যর্থ');
+    msg('upload-msg', 'আপলোড হয়েছে ✓ (' + d.file_size + ')', true);
+    document.getElementById('file-key-info').textContent = 'বর্তমান ফাইল: ' + d.file_key;
+  } catch (err) { msg('upload-msg', err.message, false); }
+  btn.disabled = false;
+});
+(async () => { await adminShell('resources'); await loadCats(); loadList(); })();
+</script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>সাপোর্ট করুন — মুক্তপাঠ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body data-page="support">
+<header class="site-header" id="site-header"></header>
+<section>
+  <div class="container">
+    <h1 class="section-title">পাশে থাকুন</h1>
+    <p class="section-sub">সাপোর্ট সম্পূর্ণ ঐচ্ছিক। এর ১০% যায় ভালো কাজের ফান্ডে, বাকিটা সাইট চালানোর খরচে।</p>
+
+    <div class="steps" style="margin-bottom:26px">
+      <div class="step"><div class="n">১</div><h3>টাকা পাঠান</h3><p>নিচের নম্বরে bKash বা Nagad-এ Send Money করুন।</p></div>
+      <div class="step"><div class="n">২</div><h3>ID দিন</h3><p>SMS-এ পাওয়া Transaction ID ফর্মে লিখে জমা দিন।</p></div>
+      <div class="step"><div class="n">৩</div><h3>যাচাই ও তালিকা</h3><p>অ্যাডমিন মিলিয়ে দেখার পর নাম তালিকায় ওঠে, ১০% ফান্ডে যায়।</p></div>
+    </div>
+
+    <div id="pay-numbers"></div>
+    <p style="margin:14px 0"><a href="/good-cause.html">পুরো টাকা ভালো কাজে দিতে চান? ফান্ডে সরাসরি অনুদান দিন →</a></p>
+
+    <div class="form-card" style="margin-top:18px">
+      <h2>Transaction ID জমা দিন</h2>
+      <form id="support-form">
+        <label>আপনার নাম *</label><input name="name" required maxlength="100">
+        <label>আপনার মোবাইল নম্বর</label><input name="phone" maxlength="30" placeholder="01XXXXXXXXX">
+        <label>মাধ্যম *</label>
+        <select name="method"><option value="bkash">bKash</option><option value="nagad">Nagad</option></select>
+        <label>পরিমাণ (টাকা) *</label><input name="amount" type="number" min="1" required>
+        <label>Transaction ID *</label><input name="trx_id" required maxlength="20" placeholder="যেমন: 9HX7K2LMNQ">
+        <label>মন্তব্য (ঐচ্ছিক)</label><textarea name="message" maxlength="300" style="min-height:70px"></textarea>
+        <p style="margin-top:16px"><button class="btn" type="submit">জমা দিন</button></p>
+        <div class="form-msg" id="support-msg"></div>
+      </form>
+    </div>
+
+    <h2 class="section-title" style="margin-top:40px">যারা পাশে আছেন</h2>
+    <p class="section-sub">যাচাই হওয়া সাপোর্টারদের তালিকা।</p>
+    <div id="supporters"><p class="empty">লোড হচ্ছে…</p></div>
+
+    <h2 class="section-title" style="margin-top:40px">মন্তব্য</h2>
+    <p class="section-sub">ভালো-খারাপ, যা মনে হয় লিখুন — যাচাইয়ের পর প্রকাশ হবে।</p>
+    <div class="form-card">
+      <form id="comment-form">
+        <label>নাম *</label><input name="name" required maxlength="80">
+        <label>মন্তব্য *</label><textarea name="body" required maxlength="500"></textarea>
+        <p style="margin-top:14px"><button class="btn btn-green" type="submit">মন্তব্য জমা দিন</button></p>
+        <div class="form-msg" id="comment-msg"></div>
+      </form>
+    </div>
+    <div id="comments" style="margin-top:16px"></div>
+  </div>
+</section>
+<footer class="site-footer" id="site-footer"></footer>
+<script src="/assets/js/common.js"></script>
+<script>
+(async () => {
+  const site = await loadSite();
+  const box = document.getElementById('pay-numbers');
+  const rows = [];
+  if (site.bkash_number) rows.push(['bKash', site.bkash_number]);
+  if (site.nagad_number) rows.push(['Nagad', site.nagad_number]);
+  box.innerHTML = rows.length ? rows.map(([m, n]) => `
+    <div class="pay-box"><strong>${m}:</strong><span class="num">${esc(n)}</span>
+    <button class="copy-btn" data-num="${esc(n)}">কপি করুন</button></div>`).join('')
+    : '<div class="notice">পেমেন্ট নম্বর শীঘ্রই যোগ করা হবে।</div>';
+  box.querySelectorAll('.copy-btn').forEach((b) => b.addEventListener('click', () => copyText(b.dataset.num, b)));
+
+  try {
+    const d = await api('/api/support');
+    document.getElementById('supporters').innerHTML = d.supporters.length
+      ? `<div class="table-wrap"><table><tr><th>নাম</th><th>পরিমাণ</th><th>মাধ্যম</th><th>মন্তব্য</th></tr>
+         ${d.supporters.map((s) => `<tr><td>${esc(s.name)}</td><td>${taka(s.amount)}</td><td>${s.method === 'nagad' ? 'Nagad' : 'bKash'}</td><td>${esc(s.message || '')}</td></tr>`).join('')}</table></div>`
+      : '<p class="empty">এখনো কেউ সাপোর্ট করেননি — প্রথমজন হতে পারেন!</p>';
+  } catch { document.getElementById('supporters').innerHTML = '<p class="empty">তালিকা লোড করা যায়নি।</p>'; }
+
+  async function loadComments() {
+    try {
+      const d = await api('/api/comments?page=support');
+      document.getElementById('comments').innerHTML = d.comments.map((c) => `
+        <div class="comment"><span class="who">${esc(c.name)}</span> <span class="when">${fmtDate(c.created_at)}</span>
+        <p>${esc(c.body)}</p></div>`).join('') || '<p class="empty">এখনো কোনো মন্তব্য নেই।</p>';
+    } catch { /* ignore */ }
+  }
+  loadComments();
+
+  formHandler('support-form', 'support-msg', async (fd) => {
+    const d = await apiPost('/api/support', Object.fromEntries(fd));
+    return d.message;
+  });
+  formHandler('comment-form', 'comment-msg', async (fd) => {
+    const obj = Object.fromEntries(fd); obj.page = 'support';
+    const d = await apiPost('/api/comments', obj);
+    return d.message;
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>মন্তব্য — অ্যাডমিন</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-side" id="admin-side"></aside>
+  <main class="admin-main">
+    <h1 style="margin-bottom:14px">মন্তব্য মডারেশন</h1>
+    <div class="table-wrap"><table id="tbl"></table></div>
+  </main>
+</div>
+<script src="/assets/js/admin.js"></script>
+<script>
+async function load() {
+  const d = await apiGet('/api/admin/comments');
+  document.getElementById('tbl').innerHTML =
+    '<tr><th>পেজ</th><th>নাম</th><th>মন্তব্য</th><th>অবস্থা</th><th>সময়</th><th>কাজ</th></tr>' +
+    (d.comments.map((c) => `<tr><td>${c.page === 'support' ? 'সাপোর্ট' : 'ফান্ড'}</td>
+      <td><strong>${esc(c.name)}</strong></td><td>${esc(c.body)}</td>
+      <td><span class="status ${c.status}">${statusBn(c.status)}</span></td><td>${fmtDate(c.created_at)}</td>
+      <td>${c.status !== 'approved' ? `<button class="btn btn-small btn-green" data-ok="${c.id}">অনুমোদন</button>` : ''}
+      <button class="btn btn-small btn-danger" data-del="${c.id}">মুছুন</button></td></tr>`).join('')
+      || '<tr><td colspan="6">কোনো মন্তব্য নেই</td></tr>');
+  document.querySelectorAll('[data-ok]').forEach((b) => b.addEventListener('click', async () => {
+    await apiSend('/api/admin/comments', 'PUT', { id: Number(b.dataset.ok), status: 'approved' }); load();
+  }));
+  document.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => {
+    if (!confirm('মন্তব্য মুছতে চান?')) return;
+    await apiSend('/api/admin/comments?id=' + b.dataset.del, 'DELETE'); load();
+  }));
+}
+(async () => { await adminShell('comments'); load(); })();
+</script>
+</body>
+</html>

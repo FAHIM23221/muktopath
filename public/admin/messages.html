@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>মেসেজ — অ্যাডমিন</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-side" id="admin-side"></aside>
+  <main class="admin-main">
+    <h1 style="margin-bottom:14px">যোগাযোগের মেসেজ</h1>
+    <div id="list"><p class="empty">লোড হচ্ছে…</p></div>
+  </main>
+</div>
+<script src="/assets/js/admin.js"></script>
+<script>
+const TOPIC = { general: 'সাধারণ প্রশ্ন', download: 'ডাউনলোড সমস্যা', support: 'সাপোর্ট/Trx', request: 'রিসোর্স অনুরোধ', other: 'অন্যান্য' };
+async function load() {
+  const d = await apiGet('/api/admin/messages');
+  document.getElementById('list').innerHTML = d.messages.length ? d.messages.map((m) => `
+    <div class="card" style="margin-bottom:14px">
+      <div class="meta-row"><strong>${esc(m.name)}</strong>
+        <span class="badge">${esc(TOPIC[m.topic] || m.topic)}</span>
+        <span>${esc(m.channel)}: ${esc(m.contact)}</span>
+        <span class="status ${m.status === 'unread' ? 'pending' : 'verified'}">${statusBn(m.status)}</span>
+        <span>${fmtDate(m.created_at)}</span></div>
+      <p style="white-space:pre-wrap">${esc(m.body)}</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${m.status !== 'read' ? `<button class="btn btn-small btn-ghost" data-st="read:${m.id}">পঠিত করুন</button>` : ''}
+        ${m.status !== 'replied' ? `<button class="btn btn-small btn-green" data-st="replied:${m.id}">উত্তর হয়েছে</button>` : ''}
+        <button class="btn btn-small btn-danger" data-del="${m.id}">মুছুন</button>
+      </div>
+    </div>`).join('') : '<p class="empty">কোনো মেসেজ নেই।</p>';
+  document.querySelectorAll('[data-st]').forEach((b) => b.addEventListener('click', async () => {
+    const [st, id] = b.dataset.st.split(':');
+    await apiSend('/api/admin/messages', 'PUT', { id: Number(id), status: st }); load();
+  }));
+  document.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => {
+    if (!confirm('মেসেজ মুছতে চান?')) return;
+    await apiSend('/api/admin/messages?id=' + b.dataset.del, 'DELETE'); load();
+  }));
+}
+(async () => { await adminShell('messages'); load(); })();
+</script>
+</body>
+</html>

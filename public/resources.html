@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>সব রিসোর্স — মুক্তপাঠ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body data-page="resources">
+<header class="site-header" id="site-header"></header>
+<section>
+  <div class="container">
+    <h1 class="section-title">রিসোর্স লাইব্রেরি</h1>
+    <p class="section-sub">সব রিসোর্স ফ্রি — পছন্দেরটা বেছে নিয়ে ডাউনলোড করুন।</p>
+    <div class="toolbar">
+      <div class="grow"><label for="q">খুঁজুন</label><input id="q" type="search" placeholder="নাম, বিষয় বা ট্যাগ লিখুন…"></div>
+      <div><label for="sort">সাজান</label>
+        <select id="sort"><option value="new">নতুন আগে</option><option value="popular">জনপ্রিয় আগে</option><option value="title">নাম অনুযায়ী</option></select></div>
+    </div>
+    <div class="chip-row" id="cat-chips"></div>
+    <div class="grid" id="grid"><p class="empty">লোড হচ্ছে…</p></div>
+    <div class="pager">
+      <button id="prev">← আগের</button><span id="page-info" style="align-self:center"></span><button id="next">পরের →</button>
+    </div>
+  </div>
+</section>
+<footer class="site-footer" id="site-footer"></footer>
+<script src="/assets/js/common.js"></script>
+<script>
+let state = { q: '', category: new URLSearchParams(location.search).get('category') || '', sort: 'new', page: 1, pages: 1 };
+async function loadCats() {
+  try {
+    const c = await api('/api/categories');
+    const chips = document.getElementById('cat-chips');
+    chips.innerHTML = `<button class="cat-chip ${!state.category ? 'on' : ''}" data-slug="">সব</button>` +
+      c.categories.map((cat) => `<button class="cat-chip ${state.category === cat.slug ? 'on' : ''}" data-slug="${esc(cat.slug)}">${esc(cat.name)}</button>`).join('');
+    chips.querySelectorAll('.cat-chip').forEach((b) => b.addEventListener('click', () => {
+      state.category = b.dataset.slug; state.page = 1; loadCats(); load();
+    }));
+  } catch { /* ignore */ }
+}
+async function load() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '<p class="empty">লোড হচ্ছে…</p>';
+  const qs = new URLSearchParams({ page: state.page, limit: 12, sort: state.sort });
+  if (state.q) qs.set('q', state.q);
+  if (state.category) qs.set('category', state.category);
+  try {
+    const d = await api('/api/resources?' + qs);
+    state.pages = d.pages;
+    grid.innerHTML = d.resources.length ? d.resources.map(resourceCard).join('') : '<p class="empty">কোনো রিসোর্স পাওয়া যায়নি।</p>';
+    document.getElementById('page-info').textContent = `পৃষ্ঠা ${bnNum(d.page)} / ${bnNum(d.pages)} (মোট ${bnNum(d.total)}টি)`;
+    document.getElementById('prev').disabled = d.page <= 1;
+    document.getElementById('next').disabled = d.page >= d.pages;
+  } catch { grid.innerHTML = '<p class="empty">লোড করা যায়নি — আবার চেষ্টা করুন।</p>'; }
+}
+let timer;
+document.getElementById('q').addEventListener('input', (e) => {
+  clearTimeout(timer); timer = setTimeout(() => { state.q = e.target.value.trim(); state.page = 1; load(); }, 300);
+});
+document.getElementById('sort').addEventListener('change', (e) => { state.sort = e.target.value; state.page = 1; load(); });
+document.getElementById('prev').addEventListener('click', () => { if (state.page > 1) { state.page--; load(); } });
+document.getElementById('next').addEventListener('click', () => { if (state.page < state.pages) { state.page++; load(); } });
+(async () => { await loadSite(); loadCats(); load(); })();
+</script>
+</body>
+</html>

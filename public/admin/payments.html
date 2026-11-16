@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>যাচাই — অ্যাডমিন</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-side" id="admin-side"></aside>
+  <main class="admin-main">
+    <h1 style="margin-bottom:6px">পেমেন্ট যাচাই</h1>
+    <p style="color:var(--muted);margin-bottom:14px">স্টেটমেন্টের সাথে Trx ID মিলিয়ে দেখে সিদ্ধান্ত নিন। সাপোর্ট যাচাই হলেই তার ১০% ফান্ডে যোগ হয় (অটো হিসাব)।</p>
+    <div class="chip-row">
+      <button class="cat-chip on" data-st="pending">অপেক্ষমাণ</button>
+      <button class="cat-chip" data-st="verified">যাচাই হওয়া</button>
+      <button class="cat-chip" data-st="rejected">বাতিল</button>
+      <button class="cat-chip" data-st="all">সব</button>
+    </div>
+    <h3 style="margin:16px 0 8px">সাপোর্ট</h3>
+    <div class="table-wrap"><table id="sup-table"></table></div>
+    <h3 style="margin:22px 0 8px">সরাসরি অনুদান (ফান্ড)</h3>
+    <div class="table-wrap"><table id="don-table"></table></div>
+  </main>
+</div>
+<script src="/assets/js/admin.js"></script>
+<script>
+let curStatus = 'pending';
+function rowHtml(x, kind) {
+  const actions = x.status === 'pending'
+    ? `<button class="btn btn-small btn-green" data-v="${kind}:${x.id}">✓ যাচাই</button>
+       <button class="btn btn-small btn-danger" data-r="${kind}:${x.id}">✗ বাতিল</button>` : '—';
+  return `<tr><td><strong>${esc(x.name)}</strong><br><span style="color:var(--muted)">${esc(x.phone || '')}</span></td>
+    <td>${taka(x.amount)}</td><td>${x.method === 'nagad' ? 'Nagad' : 'bKash'}</td>
+    <td><code>${esc(x.trx_id)}</code></td><td>${esc(x.message || '')}</td>
+    <td><span class="status ${x.status}">${statusBn(x.status)}</span><br><span style="color:var(--muted)">${fmtDate(x.created_at)}</span></td>
+    <td>${actions}</td></tr>`;
+}
+async function load() {
+  const d = await apiGet('/api/admin/payments?status=' + curStatus);
+  const head = '<tr><th>নাম</th><th>পরিমাণ</th><th>মাধ্যম</th><th>Trx ID</th><th>মন্তব্য</th><th>অবস্থা</th><th>কাজ</th></tr>';
+  document.getElementById('sup-table').innerHTML = head + (d.support.map((x) => rowHtml(x, 'support')).join('') || '<tr><td colspan="7">কিছু নেই</td></tr>');
+  document.getElementById('don-table').innerHTML = head + (d.donations.map((x) => rowHtml(x, 'donation')).join('') || '<tr><td colspan="7">কিছু নেই</td></tr>');
+  document.querySelectorAll('[data-v],[data-r]').forEach((b) => b.addEventListener('click', async () => {
+    const val = b.dataset.v || b.dataset.r;
+    const [kind, id] = val.split(':');
+    const action = b.dataset.v ? 'verified' : 'rejected';
+    if (!confirm(action === 'verified' ? 'যাচাই নিশ্চিত করছেন?' : 'বাতিল নিশ্চিত করছেন?')) return;
+    try { await apiSend('/api/admin/verify', 'POST', { kind, id: Number(id), action }); load(); }
+    catch (err) { alert(err.message); }
+  }));
+}
+document.querySelectorAll('.cat-chip').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('.cat-chip').forEach((x) => x.classList.remove('on'));
+  b.classList.add('on'); curStatus = b.dataset.st; load();
+}));
+(async () => { await adminShell('payments'); load(); })();
+</script>
+</body>
+</html>
